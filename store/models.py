@@ -2,14 +2,19 @@ from django.db import models
 from django.contrib.auth.models import User
 
 from taggit.managers import TaggableManager
+from store.validators import validate_zip_code
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, verbose_name='Użytkownik', on_delete=models.CASCADE)
+    user = models.OneToOneField(User, verbose_name='Użytkownik', on_delete=models.CASCADE, related_name='profile')
+    address = models.CharField(verbose_name='Adres', max_length=255,  blank=True, null=True)
+    zip_code = models.CharField(verbose_name='Kod pocztowy', validators=[validate_zip_code], max_length=6,
+                                blank=True, null=True)
     city = models.CharField(verbose_name='Miejscowość', max_length=128, blank=True, null=True)
+    phone = models.CharField(verbose_name='Numer telefonu', max_length=16, blank=True, null=True)
 
     def __str__(self):
-        return self.user.username
+        return self.user.get_full_name() or self.user.username
 
     class Meta:
         verbose_name = 'Profil użytkownika'
@@ -20,10 +25,16 @@ class Artist(models.Model):
     name = models.CharField(verbose_name='Nazwa', max_length=128)
     slug = models.SlugField(max_length=192, db_index=True, unique=True)
 
+    def __str__(self):
+        return self.name
+
 
 class Genre(models.Model):
     name = models.CharField(verbose_name='Nazwa', max_length=128)
     slug = models.SlugField(max_length=192, db_index=True, unique=True)
+
+    def __str__(self):
+        return self.name
 
 
 class Product(models.Model):
@@ -41,7 +52,7 @@ class Product(models.Model):
     release_date = models.DateField(verbose_name='Data wydania')
     image = models.ImageField(verbose_name='Okładka', upload_to='images', max_length=255, blank=True)
     description = models.TextField(verbose_name='Opis', max_length=1024, blank=True)
-    price = models.DecimalField(max_digits=5, decimal_places=2)
+    price = models.DecimalField(verbose_name='Cena', max_digits=5, decimal_places=2)
     length = models.PositiveSmallIntegerField('Czas trwania', blank=True)
     label = models.CharField(verbose_name='Wytwórnia', max_length=128, blank=True)
     tags = TaggableManager()
@@ -71,3 +82,10 @@ class Review(models.Model):
     class Meta:
         verbose_name = 'Komentarz'
         verbose_name_plural = 'Komentarze'
+
+
+class Shipping(models.Model):
+    name = models.CharField(verbose_name='Nazwa', max_length=192)
+    slug = models.SlugField(max_length=255, db_index=True)
+    price = models.DecimalField(verbose_name='Cena', max_digits=2, decimal_places=2)
+
