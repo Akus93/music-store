@@ -125,7 +125,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ('product', 'quantity')
 
 
-class OrderSerializer(serializers.ModelSerializer):
+class OrderDetailSerializer(serializers.ModelSerializer):
     user = UserProfileSerializer()
     shipping = ShippingShortSerializer()
     payment = serializers.StringRelatedField()
@@ -136,13 +136,12 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = ('user', 'shipping', 'payment', 'total_price', 'address', 'zip_code', 'city', 'phone', 'state',
                   'created', 'items')
 
-#
-# class FullOrderSerializer(serializers.Serializer):
-#     order = OrderSerializer()
-#     items = OrderItemSerializer(many=True)
-#
-#     def create(self, validated_data):
-#         pass
-#
-#     def update(self, instance, validated_data):
-#         pass
+
+class OrderListSerializer(serializers.ModelSerializer):
+    shipping = ShippingShortSerializer()
+    payment = serializers.StringRelatedField()
+
+    class Meta:
+        model = Order
+        fields = ('id', 'shipping', 'payment', 'total_price', 'state', 'created')
+

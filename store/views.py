@@ -4,22 +4,27 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView, Response
 
-from store.models import Product, Review, Order, OrderItem
-from store.serializers import ProductsListSerializer, ProductDetailSerializer, ReviewSerializer, OrderSerializer
+from store.paginations import StandardResultsSetPagination
+from store.filters import ProductFilterSet
+from store.models import Product, Review, Order
+from store.throttles import ProductDetailThrottle, ProductListThrottle
+from store.serializers import ProductsListSerializer, ProductDetailSerializer, ReviewSerializer, OrderDetailSerializer,\
+                              OrderListSerializer
 
 
 class ProductListView(ListAPIView):
     queryset = Product.objects.select_related('genre', 'artist', 'medium_type', 'label')
     serializer_class = ProductsListSerializer
-    # throttle_classes = TODO (ProductThrottle, )
+    throttle_classes = (ProductListThrottle, )
     filter_backends = (DjangoFilterBackend, )
-    # filter_class = TODO ProductFilterSet
-    # pagination_class = TODO ProductsPagination
+    filter_class = ProductFilterSet
+    pagination_class = StandardResultsSetPagination
 
 
 class ProductDetailView(RetrieveAPIView):
     queryset = Product.objects.select_related('genre', 'artist', 'medium_type', 'label')
     serializer_class = ProductDetailSerializer
+    throttle_classes = (ProductDetailThrottle, )
     lookup_field = 'slug'
 
 
@@ -30,6 +35,14 @@ class ProductRewievsListView(ListAPIView):
         return Review.objects.filter(product__slug=self.kwargs['slug'], is_active=True)
 
 
+class OrdersListView(ListAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = OrderListSerializer
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user.profile)
+
+
 class OrderDetailView(APIView):
     permission_classes = (IsAuthenticated, )
 
@@ -38,4 +51,4 @@ class OrderDetailView(APIView):
             order = Order.objects.prefetch_related('items').get(id=id, user=request.user.profile)
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
+        return Response(OrderDetailSerializer(order).data, status=status.HTTP_200_OK)

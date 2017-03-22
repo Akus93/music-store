@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import F
@@ -172,8 +174,8 @@ class Order(models.Model):
     created = models.DateTimeField(auto_now_add=True, verbose_name='Data utworzenia')
 
     def total_price(self):
-        return self.items.aggregate(total_price=Sum(F('quantity')*F('product__price'),
-                                                    output_field=models.FloatField()))['total_price']
+        return self.shipping.price + Decimal(self.items.aggregate(total_price=Sum(F('quantity')*F('product__price'),
+                                                                  output_field=models.FloatField()))['total_price'])
     total_price.short_description = 'Cena całkowita'
 
     class Meta:
