@@ -1,6 +1,55 @@
+from base64 import b64decode
+from uuid import uuid4
+
+from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
 from rest_framework import serializers
 
-from store.models import Product, Artist, Genre, RecordLabel
+from store.models import UserProfile, Product, Artist, Genre, RecordLabel, Review, Shipping, Payment, Order, OrderItem
+
+
+class ImageBase64Field(serializers.ImageField):
+    def to_internal_value(self, data):
+        try:
+            decoded_image = b64decode(data.split(',')[1])
+        except TypeError:
+            raise serializers.ValidationError('Niepoprawny format zdjęcia.')
+        data = ContentFile(decoded_image, name=str(uuid4()) + '.png')
+        return super(ImageBase64Field, self).to_internal_value(data)
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('username', 'first_name', 'last_name', 'email')
+        read_only_fields = ('email', 'username')
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+
+    class Meta:
+        model = UserProfile
+        fields = ('user', 'city')
+
+    def update(self, instance, validated_data):
+        try:
+            user_data = validated_data.pop('user')
+        except KeyError:
+            user_data = {}
+        first_name = user_data.get('first_name')
+        last_name = user_data.get('last_name')
+        if first_name:
+            instance.user.first_name = first_name
+        if last_name:
+            instance.user.last_name = last_name
+        if last_name or first_name:
+            instance.user.save()
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -27,6 +76,14 @@ class RecordLabelShortSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class ShippingShortSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Shipping
+        fields = ('name', 'slug')
+        read_only_fields = fields
+
+
 class ProductsListSerializer(serializers.ModelSerializer):
     genre = GenreSerializer()
     artist = ArtistSerializer()
@@ -43,9 +100,49 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     artist = ArtistSerializer()
     medium_type = serializers.StringRelatedField()
     label = RecordLabelShortSerializer()
+    tags = serializers.ReadOnlyField(source='get_serializable_tags')
 
     class Meta:
         model = Product
         fields = ('genre', 'artist', 'title', 'slug', 'medium_type', 'medium_count', 'release_date', 'image',
                   'description', 'price', 'length', 'label', 'tags', 'stock')
         read_only_fields = fields
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    author = UserProfileSerializer()
+
+    class Meta:
+        model = Review
+        fields = ('author', 'product', 'parent', 'text', 'rate', 'created')
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    product = ProductDetailSerializer()
+
+    class Meta:
+        model = OrderItem
+        fields = ('product', 'quantity')
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    user = UserProfileSerializer()
+    shipping = ShippingShortSerializer()
+    payment = serializers.StringRelatedField()
+    items = OrderItemSerializer(many=True)
+
+    class Meta:
+        model = Order
+        fields = ('user', 'shipping', 'payment', 'total_price', 'address', 'zip_code', 'city', 'phone', 'state',
+                  'created', 'items')
+
+#
+# class FullOrderSerializer(serializers.Serializer):
+#     order = OrderSerializer()
+#     items = OrderItemSerializer(many=True)
+#
+#     def create(self, validated_data):
+#         pass
+#
+#     def update(self, instance, validated_data):
+#         pass

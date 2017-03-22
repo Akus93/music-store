@@ -104,11 +104,14 @@ class Product(models.Model):
     def __str__(self):
         return self.title
 
+    def get_serializable_tags(self):
+        return self.tags.values_list('name', flat=True)
+
 
 class Review(models.Model):
     author = models.ForeignKey(UserProfile, db_index=False, verbose_name='Autor', related_name='reviews')
     product = models.ForeignKey(Product, db_index=True, verbose_name='Produkt', related_name='reviews')
-    parent = models.ForeignKey('self', db_index=False, verbose_name='Rodzic', null=True, default=None)
+    parent = models.ForeignKey('self', db_index=False, verbose_name='Rodzic', null=True, default=None, blank=True)
     text = models.CharField(verbose_name='Tekst', max_length=255)
     rate = models.PositiveSmallIntegerField(verbose_name='Ocena', choices=[(1, 1), (2, 2), (3, 3), (4, 4), (5, 5)])
     is_active = models.BooleanField(verbose_name='Czy aktywny', default=True)
