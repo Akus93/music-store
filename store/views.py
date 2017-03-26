@@ -1,5 +1,5 @@
 from rest_framework import status
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView, Response
@@ -9,7 +9,7 @@ from store.filters import ProductFilterSet
 from store.models import Product, Review, Order
 from store.throttles import ProductDetailThrottle, ProductListThrottle
 from store.serializers import ProductsListSerializer, ProductDetailSerializer, ReviewSerializer, OrderDetailSerializer,\
-                              OrderListSerializer
+                              OrderListSerializer, OrderCreateSerizalizer
 
 
 class ProductListView(ListAPIView):
@@ -52,3 +52,12 @@ class OrderDetailView(APIView):
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(OrderDetailSerializer(order).data, status=status.HTTP_200_OK)
+
+
+class OrderCreateView(CreateAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = OrderCreateSerizalizer
+    queryset = Order.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user.profile)

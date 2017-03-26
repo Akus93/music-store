@@ -130,7 +130,7 @@ class Review(models.Model):
 class Shipping(models.Model):
     """e.g InPost"""
     name = models.CharField(verbose_name='Nazwa', max_length=192)
-    slug = models.SlugField(max_length=255, db_index=True)
+    slug = models.SlugField(max_length=255, db_index=True, unique=True)
     price = models.DecimalField(verbose_name='Cena', max_digits=5, decimal_places=2)
 
     class Meta:
@@ -145,10 +145,12 @@ class Shipping(models.Model):
 class Payment(models.Model):
     """e.g PayPal"""
     name = models.CharField(verbose_name='Nazwa', max_length=192)
+    slug = models.SlugField(max_length=255, db_index=True, unique=True)
 
     class Meta:
         verbose_name = 'Płatność'
         verbose_name_plural = 'Płatności'
+        index_together = (('id', 'slug'),)
 
     def __str__(self):
         return self.name
@@ -175,7 +177,7 @@ class Order(models.Model):
 
     def total_price(self):
         return self.shipping.price + Decimal(self.items.aggregate(total_price=Sum(F('quantity')*F('product__price'),
-                                                                  output_field=models.FloatField()))['total_price'])
+                                                                  output_field=models.DecimalField()))['total_price'])
     total_price.short_description = 'Cena całkowita'
 
     class Meta:

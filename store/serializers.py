@@ -145,3 +145,29 @@ class OrderListSerializer(serializers.ModelSerializer):
         model = Order
         fields = ('id', 'shipping', 'payment', 'total_price', 'state', 'created')
 
+
+class OrderItemCreateSerializer(serializers.ModelSerializer):
+    product = serializers.SlugRelatedField(queryset=Product.objects.all(), slug_field='slug')
+
+    class Meta:
+        model = OrderItem
+        fields = ('product', 'quantity')
+
+
+class OrderCreateSerizalizer(serializers.ModelSerializer):
+    items = OrderItemCreateSerializer(many=True)
+    shipping = serializers.SlugRelatedField(queryset=Shipping.objects.all(), slug_field='slug')
+    payment = serializers.SlugRelatedField(queryset=Payment.objects.all(), slug_field='slug')
+
+    class Meta:
+        model = Order
+        exclude = ('user', 'state', 'created')
+
+    def create(self, validated_data):
+        items = validated_data.pop('items')
+        order = super(OrderCreateSerizalizer, self).create(validated_data)
+        order_items = []
+        for item in items:
+            order_items.append(OrderItem(order=order, product=item['product'], quantity=item['quantity']))
+        OrderItem.objects.bulk_create(order_items)
+        return order
