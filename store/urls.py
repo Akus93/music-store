@@ -14,6 +14,6 @@ urlpatterns = [
     url(r'^products/(?P<slug>[\w-]+)/reviews/$', ProductRewievsListView.as_view()),
     url(r'^orders/$', OrdersListView.as_view()),
     url(r'orders/new/$', OrderCreateView.as_view()),
-    url(r'^orders/(?P<id>[\d]+)/$', OrderDetailView.as_view()),
+    url(r'^orders/(?P<pk>[\d]+)/$', OrderDetailView.as_view()),
     url(r'^', include(router.urls)),
 ]

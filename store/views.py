@@ -46,12 +46,25 @@ class OrdersListView(ListAPIView):
 class OrderDetailView(APIView):
     permission_classes = (IsAuthenticated, )
 
-    def get(self, request, id, *args, **kwargs):
+    def get(self, request, pk, *args, **kwargs):
         try:
-            order = Order.objects.prefetch_related('items').get(id=id, user=request.user.profile)
+            order = Order.objects.prefetch_related('items').get(id=pk, user=request.user.profile)
         except Order.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(OrderDetailSerializer(order).data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk, *args, **kwargs):
+        try:
+            order = Order.objects.prefetch_related('items').get(id=pk, user=request.user.profile)
+        except Order.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        if order.state != Order.ORDERED:
+            return Response({'error': 'Zamówienie zostało już opłacone i nie może zostać usunięte,'
+                                      ' prosimy o kontakt osobisty.'}, status=status.HTTP_400_BAD_REQUEST)
+        for item in order.items.all():
+            item.delete()
+        order.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class OrderCreateView(CreateAPIView):
