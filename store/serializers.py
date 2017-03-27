@@ -165,6 +165,8 @@ class OrderCreateSerizalizer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         items = validated_data.pop('items')
+        if not items:
+            raise serializers.ValidationError({'items': 'Nie można złożyć pustego zamówienia.'})
         order = super(OrderCreateSerizalizer, self).create(validated_data)
         order_items = []
         for item in items:
