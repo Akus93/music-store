@@ -55,6 +55,12 @@ class RecordLabelAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
 
 
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+    prepopulated_fields = {'slug': ('name',)}
+
+
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'shipping', 'payment', 'total_price', 'state')
     list_filter = ('shipping', 'payment', 'state')
@@ -81,5 +87,6 @@ admin.site.register(Shipping, ShippingAdmin)
 admin.site.register(RecordLabel, RecordLabelAdmin)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(OrderItem, OrderItemAdmin)
+admin.site.register(Payment, PaymentAdmin)
 
-admin.site.register([Medium, Payment])
+admin.site.register([Medium, ])

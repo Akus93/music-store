@@ -171,5 +171,7 @@ class OrderCreateSerizalizer(serializers.ModelSerializer):
         order_items = []
         for item in items:
             order_items.append(OrderItem(order=order, product=item['product'], quantity=item['quantity']))
+            item['product'].stock -= item['quantity']
+            item['product'].save()
         OrderItem.objects.bulk_create(order_items)
         return order

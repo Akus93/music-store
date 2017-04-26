@@ -1,3 +1,4 @@
+from django.db import transaction, IntegrityError
 from rest_framework import status
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView
 from django_filters.rest_framework import DjangoFilterBackend
@@ -73,4 +74,9 @@ class OrderCreateView(CreateAPIView):
     queryset = Order.objects.all()
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user.profile)
+        try:
+            with transaction.atomic():
+                serializer.save(user=self.request.user.profile)
+        except IntegrityError:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
