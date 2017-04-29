@@ -1,4 +1,5 @@
 from decimal import Decimal
+from uuid import uuid4
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -166,6 +167,7 @@ class Order(models.Model):
         (SEND, 'Wysłane')
     )
     user = models.ForeignKey(UserProfile, verbose_name='Kupujący', related_name='orders')
+    code = models.UUIDField(default=uuid4, editable=False)
     shipping = models.ForeignKey(Shipping, verbose_name='Dostawa', related_name='orders')
     payment = models.ForeignKey(Payment, verbose_name='Płatonść', related_name='orders')
     address = models.CharField(verbose_name='Adres', max_length=255)
@@ -201,3 +203,15 @@ class OrderItem(models.Model):
     def __str__(self):
         return 'Zamówiony produkt nr. {}'.format(self.id)
 
+
+class BankInfo(models.Model):
+    account = models.CharField(verbose_name='Numer rachunku', max_length=100)
+    name = models.CharField(verbose_name='Nazwa odbiorcy', max_length=128)
+    address = models.CharField(verbose_name='Adres', max_length=255)
+
+    class Meta:
+        verbose_name = 'Dane przelewowe'
+        verbose_name_plural = 'Dane przelewowe'
+
+    def __str__(self):
+        return 'Dane przelewowe'

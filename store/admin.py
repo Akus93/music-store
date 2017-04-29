@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from store.models import UserProfile, Artist, Genre, Product, Review, Shipping, Medium, RecordLabel, Payment, Order,\
-                         OrderItem
+                         OrderItem, BankInfo
 
 
 class UserProfileInline(admin.StackedInline):
@@ -89,4 +89,4 @@ admin.site.register(Order, OrderAdmin)
 admin.site.register(OrderItem, OrderItemAdmin)
 admin.site.register(Payment, PaymentAdmin)
 
-admin.site.register([Medium, ])
+admin.site.register([Medium, BankInfo])

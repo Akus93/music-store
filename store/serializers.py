@@ -5,7 +5,8 @@ from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 
-from store.models import UserProfile, Product, Artist, Genre, RecordLabel, Review, Shipping, Payment, Order, OrderItem
+from store.models import UserProfile, Product, Artist, Genre, RecordLabel, Review, Shipping, Payment, Order, OrderItem,\
+                         BankInfo
 
 
 class ImageBase64Field(serializers.ImageField):
@@ -176,3 +177,11 @@ class OrderCreateSerizalizer(serializers.ModelSerializer):
             item['product'].save()
         OrderItem.objects.bulk_create(order_items)
         return order
+
+
+class BankInfoSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = BankInfo
+        fields = ('account', 'name', 'address')
+        read_only_fields = fields

@@ -7,10 +7,10 @@ from rest_framework.views import APIView, Response
 
 from store.paginations import StandardResultsSetPagination
 from store.filters import ProductFilterSet
-from store.models import Product, Review, Order
+from store.models import Product, Review, Order, BankInfo
 from store.throttles import ProductDetailThrottle, ProductListThrottle
-from store.serializers import ProductsListSerializer, ProductDetailSerializer, ReviewSerializer, OrderDetailSerializer,\
-                              OrderListSerializer, OrderCreateSerizalizer
+from store.serializers import ProductsListSerializer, ProductDetailSerializer, ReviewSerializer, OrderDetailSerializer, \
+    OrderListSerializer, OrderCreateSerizalizer, BankInfoSerializer
 
 
 class ProductListView(ListAPIView):
@@ -80,3 +80,11 @@ class OrderCreateView(CreateAPIView):
         except IntegrityError:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        bank_info = BankInfo.objects.first()
+        body = {'order': serializer.data, 'info': BankInfoSerializer(bank_info).data}
+        return Response(body, status=status.HTTP_201_CREATED, headers=headers)
