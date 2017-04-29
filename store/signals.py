@@ -19,3 +19,4 @@ def save_user_profile(sender, instance, **kwargs):
 @receiver(post_delete, sender=UserProfile)
 def post_delete_user(sender, instance, *args, **kwargs):
     instance.user.delete()
+

@@ -8,6 +8,7 @@ from rest_framework.views import APIView, Response
 from store.paginations import StandardResultsSetPagination
 from store.filters import ProductFilterSet
 from store.models import Product, Review, Order, BankInfo
+from store.utils import send_email_about_order
 from store.throttles import ProductDetailThrottle, ProductListThrottle
 from store.serializers import ProductsListSerializer, ProductDetailSerializer, ReviewSerializer, OrderDetailSerializer, \
     OrderListSerializer, OrderCreateSerizalizer, BankInfoSerializer
@@ -71,12 +72,13 @@ class OrderDetailView(APIView):
 class OrderCreateView(CreateAPIView):
     permission_classes = (IsAuthenticated, )
     serializer_class = OrderCreateSerizalizer
-    queryset = Order.objects.all()
+    queryset = Order.objects.all().select_related('user__user')
 
     def perform_create(self, serializer):
         try:
             with transaction.atomic():
-                serializer.save(user=self.request.user.profile)
+                order = serializer.save(user=self.request.user.profile)
+                transaction.on_commit(lambda: send_email_about_order(order))
         except IntegrityError:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -85,6 +87,10 @@ class OrderCreateView(CreateAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        bank_info = BankInfo.objects.first()
-        body = {'order': serializer.data, 'info': BankInfoSerializer(bank_info).data}
-        return Response(body, status=status.HTTP_201_CREATED, headers=headers)
+        payment_method = serializer.data.get('payment', None)
+        if payment_method == 'przelew-bankowy':
+            bank_info = BankInfo.objects.first()
+            body = {'order': serializer.data, 'info': BankInfoSerializer(bank_info).data}
+            return Response(body, status=status.HTTP_201_CREATED, headers=headers)
+        else:
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
