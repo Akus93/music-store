@@ -88,10 +88,11 @@ class ProductsListSerializer(serializers.ModelSerializer):
     genre = GenreSerializer()
     artist = ArtistSerializer()
     medium_type = serializers.StringRelatedField()
+    tags = serializers.ReadOnlyField(source='get_serializable_tags')
 
     class Meta:
         model = Product
-        fields = ('genre', 'artist', 'title', 'slug', 'medium_type', 'release_date', 'image', 'price', 'stock')
+        fields = ('genre', 'artist', 'title', 'slug', 'medium_type', 'release_date', 'image', 'price', 'stock', 'tags')
         read_only_fields = fields
 
 
