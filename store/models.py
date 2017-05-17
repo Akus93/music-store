@@ -116,13 +116,15 @@ class Review(models.Model):
     product = models.ForeignKey(Product, db_index=True, verbose_name='Produkt', related_name='reviews')
     parent = models.ForeignKey('self', db_index=False, verbose_name='Rodzic', null=True, default=None, blank=True)
     text = models.CharField(verbose_name='Tekst', max_length=255)
-    rate = models.PositiveSmallIntegerField(verbose_name='Ocena', choices=[(1, 1), (2, 2), (3, 3), (4, 4), (5, 5)])
+    rate = models.PositiveSmallIntegerField(verbose_name='Ocena', null=True, blank=True,
+                                            choices=[(1, 1), (2, 2), (3, 3), (4, 4), (5, 5)])
     is_active = models.BooleanField(verbose_name='Czy aktywny', default=True)
     created = models.DateTimeField(auto_now_add=True, verbose_name='Data dodania')
 
     class Meta:
         verbose_name = 'Komentarz'
         verbose_name_plural = 'Komentarze'
+        ordering = ('-created', )
 
     def __str__(self):
         return 'Opinia {} o {}'.format(self.author, self.product)

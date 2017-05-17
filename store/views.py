@@ -1,17 +1,17 @@
 from django.db import transaction, IntegrityError
 from rest_framework import status
-from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView, ListCreateAPIView, RetrieveUpdateAPIView
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.views import APIView, Response
 
 from store.paginations import StandardResultsSetPagination
-from store.filters import ProductFilterSet
-from store.models import Product, Review, Order, BankInfo
+from store.filters import ProductFilterSet, ReviewFilterSet
+from store.models import Product, Review, Order, BankInfo, UserProfile
 from store.utils import send_email_about_order
 from store.throttles import ProductDetailThrottle, ProductListThrottle
-from store.serializers import ProductsListSerializer, ProductDetailSerializer, ReviewSerializer, OrderDetailSerializer, \
-    OrderListSerializer, OrderCreateSerizalizer, BankInfoSerializer
+from store.serializers import ProductsListSerializer, ProductDetailSerializer, ReviewSerializer, OrderDetailSerializer,\
+    OrderListSerializer, OrderCreateSerizalizer, BankInfoSerializer, UserProfileSerializer
 
 
 class ProductListView(ListAPIView):
@@ -30,11 +30,16 @@ class ProductDetailView(RetrieveAPIView):
     lookup_field = 'slug'
 
 
-class ProductRewievsListView(ListAPIView):
+class ReviewView(ListCreateAPIView):
+    queryset = Review.objects.filter(is_active=True)
     serializer_class = ReviewSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly, )
+    pagination_class = StandardResultsSetPagination
+    filter_backends = (DjangoFilterBackend, )
+    filter_class = ReviewFilterSet
 
-    def get_queryset(self):
-        return Review.objects.filter(product__slug=self.kwargs['slug'], is_active=True)
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user.profile)
 
 
 class OrdersListView(ListAPIView):
@@ -94,3 +99,11 @@ class OrderCreateView(CreateAPIView):
             return Response(body, status=status.HTTP_201_CREATED, headers=headers)
         else:
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class RetrieveCurrentUserProfile(RetrieveUpdateAPIView):
+    serializer_class = UserProfileSerializer
+    permission_classes = (IsAuthenticated, )
+
+    def get_object(self):
+        return UserProfile.objects.select_related('user').get(user=self.request.user)

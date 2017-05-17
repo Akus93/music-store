@@ -112,11 +112,23 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = UserProfileSerializer()
+    author = UserProfileSerializer(read_only=True)
+    product = serializers.SlugRelatedField(queryset=Product.objects.all(), slug_field='slug')
 
     class Meta:
         model = Review
-        fields = ('author', 'product', 'parent', 'text', 'rate', 'created')
+        fields = ('id', 'author', 'product', 'parent', 'text', 'rate', 'created')
+        read_only_fields = ('id', 'created')
+
+    def create(self, validated_data):
+        parent = validated_data.get('parent', None)
+        if parent:
+            if validated_data.get('rate', None):
+                raise serializers.ValidationError({'rate': 'Nie można oceniać produktu przy odpowiedźi na komentarz.'})
+            product = validated_data.get('product')
+            if not Review.objects.filter(id=parent.id, product=product).exists():
+                raise serializers.ValidationError({'parent': 'Nie ma takiego komentarza dla tego produktu.'})
+        return super(ReviewSerializer, self).create(validated_data)
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
